@@ -1,0 +1,57 @@
+name: Build & Release App
+
+on:
+  push:
+    tags:
+      - 'v*'   # Run only when version tags are pushed
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build executable
+        run: |
+          pyinstaller --onefile app.py
+          mv dist/app myapp
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: myapp
+          path: myapp
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: myapp
+          path: ./release/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./release/myapp
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update latest.json
+        run: |
+          echo '{ "version": "${GITHUB_REF_NAME}", "download_url": "${{ secrets.DOWNLOAD_URL }}/myapp-${GITHUB_REF_NAME}" }' > latest.json

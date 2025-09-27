@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+
+    environment {
+        UPDATE_URL = credentials('UPDATE_URL')     // Jenkins secret
+        DOWNLOAD_URL = credentials('DOWNLOAD_URL') // Jenkins secret
+        VERSION = "${env.BUILD_TAG}"               // version based on build tag
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/YOUR_USERNAME/myapp.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                python3 -m venv venv
+                . venv/bin/activate
+                pip install -r requirements.txt
+                pip install pyinstaller
+                '''
+            }
+        }
+
+        stage('Build Executable') {
+            steps {
+                sh '''
+                . venv/bin/activate
+                pyinstaller --onefile app.py
+                mv dist/app myapp-${VERSION}
+                '''
+            }
+        }
+
+        stage('Publish Release') {
+            steps {
+                sh '''
+                # Example: SCP upload to web server
+                scp myapp-${VERSION} user@yourserver:/var/www/releases/
+
+                # Update latest.json on server
+                echo '{ "version": "${VERSION}", "download_url": "${DOWNLOAD_URL}/myapp-${VERSION}" }' > latest.json
+                scp latest.json user@yourserver:/var/www/html/
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Build & Release successful. Version: ${VERSION}"
+        }
+        failure {
+            echo "Build failed!"
+        }
+    }
+}
