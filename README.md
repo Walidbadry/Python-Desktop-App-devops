@@ -1,5 +1,5 @@
 # 🚀 Python Desktop App Auto-Updater with DevOps
-<img src="img.png" alt="Architecture Diagram" width="500"/>
+<img src="img.png" alt="Architecture Diagram" width="10000"/>
 
 A **complete end-to-end project** demonstrating how to build a **self-updating Python desktop application** with modern DevOps practices.
 
